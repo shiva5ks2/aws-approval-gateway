@@ -1,0 +1,103 @@
+{
+  "Comment": "Generic multi-approval workflow for high-risk AWS API actions",
+  "StartAt": "NotifyApprovers",
+  "States": {
+    "NotifyApprovers": {
+      "Type": "Map",
+      "ItemsPath": "$.approverTopicArns",
+      "Iterator": {
+        "StartAt": "NotifyOneApprover",
+        "States": {
+          "NotifyOneApprover": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sns:publish.waitForTaskToken",
+            "Parameters": {
+              "TopicArn.$": "$",
+              "Message": {
+                "requestId.$": "$$.Execution.Input.requestId",
+                "actionKey.$": "$$.Execution.Input.actionKey",
+                "requestedBy.$": "$$.Execution.Input.requestedBy",
+                "reason.$": "$$.Execution.Input.reason",
+                "taskToken.$": "$$.Task.Token"
+              }
+            },
+            "HeartbeatSecondsPath": "$$.Execution.Input.ttlSeconds",
+            "End": true
+          }
+        }
+      },
+      "Next": "UpdateStatusApproved"
+    },
+    "UpdateStatusApproved": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "ApprovalRequests",
+        "Key": {
+          "requestId": {
+            "S.$": "$.requestId"
+          }
+        },
+        "UpdateExpression": "SET #s = :s",
+        "ExpressionAttributeNames": {
+          "#s": "status"
+        },
+        "ExpressionAttributeValues": {
+          ":s": {
+            "S": "APPROVED"
+          }
+        }
+      },
+      "Next": "InvokeExecutor"
+    },
+    "InvokeExecutor": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName.$": "$.executorArn",
+        "Payload": {
+          "requestId.$": "$.requestId",
+          "actionKey.$": "$.actionKey",
+          "parameters.$": "$.parameters",
+          "taskToken.$": "$$.Task.Token"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "ExecutionFailed"
+        }
+      ],
+      "End": true
+    },
+    "ExecutionFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "ApprovalRequests",
+        "Key": {
+          "requestId": {
+            "S.$": "$.requestId"
+          }
+        },
+        "UpdateExpression": "SET #s = :s",
+        "ExpressionAttributeNames": {
+          "#s": "status"
+        },
+        "ExpressionAttributeValues": {
+          ":s": {
+            "S": "FAILED"
+          }
+        }
+      },
+      "Next": "WorkflowFailed"
+    },
+    "WorkflowFailed": {
+      "Type": "Fail",
+      "Error": "ExecutionFailed",
+      "Cause": "Executor Lambda returned an error after approval"
+    }
+  }
+}

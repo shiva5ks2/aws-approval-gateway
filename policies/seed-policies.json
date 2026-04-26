@@ -1,0 +1,68 @@
+[
+  {
+    "actionKey": "route53:DeleteHostedZone",
+    "riskLevel": "CRITICAL",
+    "requiredApprovals": 2,
+    "approverGroups": ["team-lead", "security"],
+    "ttlHours": 24,
+    "executorArn": "arn:aws:lambda:REGION:ACCOUNT:function:ApprovalGatewayExecutor-Route53",
+    "requireMFA": true,
+    "notifySlack": true,
+    "enabled": true
+  },
+  {
+    "actionKey": "iam:DeleteRole",
+    "riskLevel": "HIGH",
+    "requiredApprovals": 1,
+    "approverGroups": ["security"],
+    "ttlHours": 12,
+    "executorArn": "arn:aws:lambda:REGION:ACCOUNT:function:ApprovalGatewayExecutor-IAM",
+    "requireMFA": true,
+    "notifySlack": true,
+    "enabled": true
+  },
+  {
+    "actionKey": "rds:DeleteDBCluster",
+    "riskLevel": "CRITICAL",
+    "requiredApprovals": 2,
+    "approverGroups": ["team-lead", "data-owner"],
+    "ttlHours": 48,
+    "executorArn": "arn:aws:lambda:REGION:ACCOUNT:function:ApprovalGatewayExecutor-RDS",
+    "requireMFA": true,
+    "notifySlack": true,
+    "enabled": true
+  },
+  {
+    "actionKey": "rds:DeleteDBInstance",
+    "riskLevel": "CRITICAL",
+    "requiredApprovals": 2,
+    "approverGroups": ["team-lead", "data-owner"],
+    "ttlHours": 24,
+    "executorArn": "arn:aws:lambda:REGION:ACCOUNT:function:ApprovalGatewayExecutor-RDS",
+    "requireMFA": true,
+    "notifySlack": true,
+    "enabled": true
+  },
+  {
+    "actionKey": "ec2:DeleteVpc",
+    "riskLevel": "CRITICAL",
+    "requiredApprovals": 2,
+    "approverGroups": ["team-lead", "security"],
+    "ttlHours": 24,
+    "executorArn": "arn:aws:lambda:REGION:ACCOUNT:function:ApprovalGatewayExecutor-EC2",
+    "requireMFA": true,
+    "notifySlack": true,
+    "enabled": true
+  },
+  {
+    "actionKey": "s3:DeleteBucket",
+    "riskLevel": "HIGH",
+    "requiredApprovals": 2,
+    "approverGroups": ["team-lead", "security"],
+    "ttlHours": 24,
+    "executorArn": "arn:aws:lambda:REGION:ACCOUNT:function:ApprovalGatewayExecutor-S3",
+    "requireMFA": true,
+    "notifySlack": true,
+    "enabled": true
+  }
+]

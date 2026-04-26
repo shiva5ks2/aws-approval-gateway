@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SCPDenyProtectedActions",
+      "Effect": "Deny",
+      "Action": [
+        "route53:DeleteHostedZone",
+        "iam:DeleteRole",
+        "rds:DeleteDBCluster",
+        "rds:DeleteDBInstance",
+        "ec2:DeleteVpc",
+        "s3:DeleteBucket"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::*:role/ApprovalGatewayExecutorRole",
+            "arn:aws:iam::*:role/BreakGlassEmergencyRole"
+          ]
+        }
+      }
+    }
+  ]
+}

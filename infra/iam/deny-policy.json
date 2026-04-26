@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyProtectedActionsForHumans",
+      "Effect": "Deny",
+      "Action": [
+        "route53:DeleteHostedZone",
+        "iam:DeleteRole",
+        "rds:DeleteDBCluster",
+        "rds:DeleteDBInstance",
+        "ec2:DeleteVpc",
+        "s3:DeleteBucket"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::ACCOUNT_ID:role/ApprovalGatewayExecutorRole"
+        }
+      }
+    }
+  ]
+}

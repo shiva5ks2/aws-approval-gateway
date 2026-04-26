@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowProtectedActions",
+      "Effect": "Allow",
+      "Action": [
+        "route53:DeleteHostedZone",
+        "route53:GetHostedZone",
+        "iam:DeleteRole",
+        "rds:DeleteDBCluster",
+        "rds:DeleteDBInstance",
+        "rds:CreateDBSnapshot",
+        "ec2:DeleteVpc",
+        "s3:DeleteBucket",
+        "dynamodb:UpdateItem",
+        "dynamodb:GetItem",
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyPrivilegeEscalation",
+      "Effect": "Deny",
+      "Action": [
+        "iam:CreateRole",
+        "iam:AttachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:PassRole",
+        "sts:AssumeRole",
+        "organizations:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
