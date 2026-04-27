@@ -1,8 +1,24 @@
 # AWS Approval Gateway
 
-A data-driven, multi-approval, MFA-enforced gateway that intercepts destructive-but-legitimate AWS API calls before they execute. Onboarding a new protected action requires no code changes — only a policy registry entry.
+Stop destructive AWS API calls before they execute — not after. The Approval Gateway blocks high-risk actions by default and routes them through a structured, multi-approver workflow before a narrowly-scoped executor performs the action.
 
-Inspired by the Route 53 deletion guard pattern, extended into a generic gateway.
+Destructive actions like `DeleteDBCluster`, `DeleteHostedZone`, and `DeleteVpc` are instant and irreversible. SCPs can block them entirely, but that's too blunt — sometimes you genuinely need to delete a hosted zone or decommission a DB instance/cluster.
+
+The gateway sits between "allowed" and "denied." It blocks these actions by default (IAM deny policy + SCP), then provides a structured approval workflow to authorize them when they're legitimate. A human submits a request, the right approvers are notified, and only after all approvals are collected does a narrowly-scoped executor Lambda perform the action.
+
+The gateway ships with 6 sample protected actions across Route53, IAM, RDS, EC2, and S3 as a starting point. It is designed as an extensible framework — adding your own protected APIs requires a DynamoDB policy entry and a lightweight executor Lambda, not a redesign of the workflow.
+
+**At a glance:**
+- Data-driven policy registry in DynamoDB — add a new protected action without changing the workflow
+- Multi-approver fan-out via Step Functions — 1, 2, or 3 approvers from the same state machine
+- Dual enforcement: IAM deny policy (account-level) + SCP (org-level backstop)
+- Bypass detection: EventBridge watches CloudTrail and alerts if anyone calls a protected action outside the gateway
+- CDK stack for one-command deployment
+
+**Design choices:**
+- The gateway is not a security baseline — it assumes a landing zone is already in place for audit trail protection, Config recorders, and org-level controls
+- Break glass is deliberately out of scope — the gateway provides the SCP exemption and bypass alerts, your security team owns the rest
+- Only actions that are destructive but sometimes legitimate belong here — routine operations and never-allowed actions are excluded
 
 Reference: [`aws-samples/automating-a-security-incident-with-step-functions`](https://github.com/aws-samples/automating-a-security-incident-with-step-functions)
 
