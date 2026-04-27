@@ -439,24 +439,6 @@ class ApprovalGatewayStack(cdk.Stack):
         )
 
         # ---------------------------------------------------------------------
-        # EventBridge — SCP self-heal rule (disabled — Lambda not built yet)
-        # ---------------------------------------------------------------------
-        events.Rule(
-            self,
-            "SCPSelfHealRule",
-            rule_name="ApprovalGatewaySCPSelfHeal",
-            description="Fires if the gateway SCP is detached, deleted, or modified (disabled — self-heal Lambda not built yet)",
-            event_pattern=events.EventPattern(
-                source=["aws.organizations"],
-                detail_type=["AWS API Call via CloudTrail"],
-                detail={
-                    "eventName": ["DetachPolicy", "DeletePolicy", "UpdatePolicy"]
-                },
-            ),
-            enabled=False,
-        )
-
-        # ---------------------------------------------------------------------
         # CloudFormation outputs
         # ---------------------------------------------------------------------
         cdk.CfnOutput(

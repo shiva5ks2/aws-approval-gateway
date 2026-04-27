@@ -6,6 +6,8 @@ Inspired by the Route 53 deletion guard pattern, extended into a generic gateway
 
 Reference: [`aws-samples/automating-a-security-incident-with-step-functions`](https://github.com/aws-samples/automating-a-security-incident-with-step-functions)
 
+For a landscape analysis of similar tools and the design rationale behind this architecture, see [docs/DESIGN.md](docs/DESIGN.md).
+
 ## Prerequisites
 
 The gateway assumes a properly configured AWS landing zone is already in place. It is not a security baseline — it is an approval workflow for actions that fall between "routine" and "never allowed."
@@ -17,6 +19,7 @@ Your landing zone (Control Tower, AFT, or a custom org baseline) must already ha
 - **KMS key protection** — `kms:DisableKey` takes effect immediately with no recovery window and should be blocked by a landing zone SCP. `kms:ScheduleKeyDeletion` has a mandatory 7-30 day waiting period enforced by AWS, during which the deletion can be cancelled. Monitor via CloudTrail alerts or Config rules rather than an approval workflow.
 - **Organization integrity** — `organizations:LeaveOrganization` is blocked by landing zone SCPs.
 - **Long-lived credential prevention** — `iam:CreateAccessKey` is blocked or monitored by landing zone policies if your org prohibits static credentials.
+- **SCP tampering detection** — your landing zone should monitor for `DetachPolicy`, `DeletePolicy`, and `UpdatePolicy` on the Organizations API and alert or auto-remediate. The gateway's SCP is a critical enforcement layer — if it is removed, the gateway's protection is weakened. This monitoring belongs to the management account, not to the gateway.
 
 The gateway does not duplicate these controls. If your landing zone does not cover them, add them to your org-level SCPs before deploying the gateway.
 
@@ -47,7 +50,7 @@ If you are running this in a standalone account with no Organization, SCPs are n
 
 - There is no protection against an account admin removing the deny policy and calling protected actions directly.
 - The `BreakGlassEmergencyRole` exemption only exists in the SCP. In a single-account setup, break glass must be handled differently — for example, by adding the break glass role ARN to the `StringNotLike` condition in the IAM deny policy itself. This is less secure because an account admin could modify that condition.
-- There is no SCP self-healing (the EventBridge rule for SCP tampering detection is irrelevant).
+- There is no SCP tampering detection (that is a management account concern handled by your landing zone).
 
 For production use, an AWS Organization with SCPs is strongly recommended.
 
@@ -204,7 +207,6 @@ Once deployed, the following happens without human intervention:
 - **Executor invocation and re-validation.** After approval, Step Functions invokes the correct executor Lambda (ARN stored in the policy). The executor re-validates APPROVED status in DynamoDB before calling the AWS API — defense in depth, fully automated.
 - **TTL-based expiry.** If approvers don't respond within the policy's `ttlHours`, the Step Functions heartbeat timeout fires, the execution fails, and the DynamoDB record expires via TTL. No cron job or cleanup Lambda needed.
 - **Bypass detection.** EventBridge watches CloudTrail for any call to a protected action. The BypassAlertLambda checks whether the caller was the executor role — if not, it publishes a full-context alert to the security SNS topic. This runs continuously with zero human involvement.
-- **SCP self-healing.** A second EventBridge rule watches for `DetachPolicy`, `DeletePolicy`, or `UpdatePolicy` on the Organizations API. If someone removes or modifies the gateway's SCP, a Lambda reattaches it and pages the security team.
 
 ## What is not automated — and why
 
